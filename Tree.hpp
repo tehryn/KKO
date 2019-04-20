@@ -18,11 +18,13 @@ public:
     uint8_t data;
     Tree * left;
     Tree * right;
+    Tree * parent;
     Tree( size_t count = 0, uint8_t data = 0, Tree * left = nullptr, Tree * right = nullptr ) {
         this->count = count;
         this->data = data;
         this->left = left;
         this->right = right;
+        this->parent = nullptr;
     }
 
     Tree( huffmanCode & coder ) {
@@ -30,18 +32,21 @@ public:
         this->data = 0;
         this->left = nullptr;
         this->right = nullptr;
+        this->parent = nullptr;
         for( size_t byte = 0; byte < 256; byte++ ) {
             Tree * tmp = this;
             for( bool bit : coder[ byte ] ) {
                 if ( bit ) {
                     if ( tmp->right == nullptr ) {
                         tmp->right = new Tree();
+                        tmp->right->parent = tmp;
                     }
                     tmp = tmp->right;
                 }
                 else {
                     if ( tmp->left == nullptr ) {
                         tmp->left = new Tree();
+                        tmp->left->parent = tmp;
                     }
                     tmp = tmp->left;
                 }
@@ -55,7 +60,9 @@ public:
         delete this->right;
     }
 
-    static Tree * buildTree( std::vector<Tree *> leafs );
+    static Tree * buildTree( std::vector<Tree *> & leaves, std::vector<Tree *> * nodes = nullptr );
+
+    static Tree * initAdaptiveTree();
 
     static std::vector<Tree *> loadLeafNodes( std::vector<uint8_t> data );
 
@@ -110,6 +117,37 @@ public:
 
         return stream;
     }
+
+    static Tree * rebuild( Tree * root ) {
+        std::vector<Tree *> leaves, nodes;
+        leaves.reserve(256);
+        root->getLeaves( leaves, nodes, true );
+        std::sort( leaves.begin(), leaves.end(), Tree::comparePointers );
+        return Tree::buildTree( leaves, &nodes );
+    }
+
+    void getLeaves( std::vector<Tree *> & leaves, std::vector<Tree *> & nodes, bool nullPointers = false ) {
+        if ( this->right != nullptr ) {
+            this->right->getLeaves( leaves, nodes, nullPointers );
+            this->left->getLeaves( leaves, nodes, nullPointers );
+            nodes.push_back( this );
+        }
+        else {
+            leaves.push_back( this );
+        }
+        if ( nullPointers ) {
+            this->left = this->right = this->parent = nullptr;
+        }
+    }
+
+    size_t insert( bitSet & code ) {
+        Tree * seek = this;
+        for( bool bit : code ) {
+            seek = bit ? seek->right : seek->left;
+        }
+        return ++seek->count;
+    }
+
 
 };
 

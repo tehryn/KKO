@@ -22,36 +22,67 @@ std::vector<Tree *> Tree::loadLeafNodes( std::vector<uint8_t> data ) {
     return nodes;
 }
 
-Tree * Tree::buildTree( std::vector<Tree *> nodes ) {
-    if ( nodes.size() == 0 ) {
+Tree * Tree::initAdaptiveTree() {
+    std::vector<uint8_t> initVector;
+    initVector.reserve( 256 );
+    int byte = 0;
+    while ( byte < 256 ) {
+        initVector.push_back( byte++ );
+    }
+    std::vector<Tree *> initNodes = Tree::loadLeafNodes( initVector );
+    return Tree::buildTree( initNodes );
+}
+
+Tree * Tree::buildTree( std::vector<Tree *> & leaves, std::vector<Tree *> * nodes ) {
+    if ( leaves.size() == 0 ) {
         return nullptr;
     }
-    else if ( nodes.size() == 1 ) {
-        nodes.clear();
-        return new Tree( nodes[0]->count, 0, nodes[0] );
+    else if ( leaves.size() == 1 ) {
+        Tree * tmp;
+        if ( nodes != nullptr && nodes->size() > 0 ) {
+            tmp = nodes->back();
+            nodes->pop_back();
+            *tmp = *leaves[0];
+        }
+        else {
+            tmp = new Tree( leaves[0]->count, 0, leaves[0] );
+        }
+        return tmp;
     }
+
     Tree * root  = nullptr;
     while( true ) {
-        Tree * left  = nodes.front();
-        nodes.erase( nodes.begin() );
-        Tree * right = nodes.front();
-        nodes.erase( nodes.begin() );
-        root  = new Tree( left->count + right->count, 0, left, right );
+        Tree * left  = leaves.front();
+        leaves.erase( leaves.begin() );
+        Tree * right = leaves.front();
+        leaves.erase( leaves.begin() );
+        if ( nodes != nullptr && nodes->size() > 0 ) {
+            root = nodes->back();
+            nodes->pop_back();
+            root->count = left->count + right->count;
+            root->data  = 0;
+            root->left  = left;
+            root->right = right;
+        }
+        else {
+            root  = new Tree( left->count + right->count, 0, left, right );
+        }
+        root->left->parent = root->right->parent = root;
 
-        if ( nodes.empty() ) {
+        if ( leaves.empty() ) {
             return root;
         }
 
         bool set = false;
-        for( std::vector<Tree *>::iterator it = nodes.begin(); it != nodes.end(); it++ ) {
+        for( std::vector<Tree *>::iterator it = leaves.begin(); it != leaves.end(); it++ ) {
             if ( root->count <= (*it)->count ) {
-                nodes.insert( it, root );
+                leaves.insert( it, root );
                 set = true;
                 break;
             }
         }
         if ( !set ) {
-            nodes.push_back( root );
+            leaves.push_back( root );
         }
     }
     return root;

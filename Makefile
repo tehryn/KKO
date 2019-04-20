@@ -1,17 +1,20 @@
 CCFLAGS = -std=c++11 -pedantic -Wall -g #-o3 -march=native
-huffman: huffman.o Tree.o
+huffman: huffman.o Tree.o Coder.o
 	g++ $(CCFLAGS) -o $@ $^
 
-huffman.o: huffman.cpp huffman.hpp
+huffman.o: huffman.cpp huffman.hpp Coder.hpp
 	g++ $(CCFLAGS) -c $< -o $@
 
 Tree.o: Tree.cpp Tree.hpp
 	g++ $(CCFLAGS) -c $< -o $@
 
+Coder.o: Coder.cpp Coder.hpp Tree.hpp
+	g++ $(CCFLAGS) -c $< -o $@
+
 .PHONY: clean quickTest
 
 clean:
-	rm -f huffman.o Tree.o huffman
+	rm -f huffman.o Tree.o Coder.o huffman
 
 quickTest:
 	make clean

@@ -1,20 +1,15 @@
 #ifndef __HUFFMAN
 #define __HUFFMAN
-#include "Tree.hpp"
-#include <unistd.h>
 #include <iostream>
 #include <fstream>
-#include <string>
-#include <algorithm>
-#include <iterator>
-#include <map>
+#include <vector>
 
 enum programSettings {
     UNSET,
     COMPRESS,
     DECOMPRESS,
     STATIC,
-    DYNAMIC
+    ADAPTIVE
 };
 
 enum returnCodes {
@@ -34,8 +29,6 @@ void print_help();
  * @return vector of bytes.
  */
 std::vector<uint8_t> readBytes( std::string filename );
-
-void compressData( huffmanCode & coder, std::ofstream & out );
 
 template<typename T1, typename T2>
 void DEBUG_INLINE(T1 x, T2 y) {
