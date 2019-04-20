@@ -1,15 +1,6 @@
 #include "huffman.hpp"
 #include "Coder.hpp"
 
-void printMap( huffmanCode & code ) {
-    for ( huffmanCode::const_iterator it = code.begin(); it != code.end(); it++ ) {
-    std::cout << +it->first << " ";
-    std::copy(it->second.begin(), it->second.end(),
-    std::ostream_iterator<bool>(std::cout));
-    std::cout << std::endl;
-    }
-}
-
 int main( int argc, char **argv ) {
     int opt, mode = UNSET, coding = UNSET;
     std::vector<uint8_t> inputData;
@@ -100,10 +91,10 @@ int main( int argc, char **argv ) {
     Coder huffmanImp = Coder( useModel, coding == ADAPTIVE );
 
     if ( mode == COMPRESS ) {
-        huffmanImp.encode( inputData, outfile );
+        huffmanImp.huffmanEncode( inputData, outfile );
     }
     else {
-        if ( !huffmanImp.decode( inputData, outfile ) ) {
+        if ( !huffmanImp.huffmanDecode( inputData, outfile ) ) {
             std::cerr << "Corrupted input file." << std::endl;
             return CORRUPTED_INPUT;
         }
@@ -120,4 +111,13 @@ void print_help() {
 std::vector<uint8_t> readBytes( std::string filename ) {
     std::ifstream file( filename, std::ios::binary );
     return std::vector<uint8_t>( ( std::istreambuf_iterator<char>( file ) ), std::istreambuf_iterator<char>() );
+}
+
+void printMap( huffmanCode & code ) {
+    for ( huffmanCode::const_iterator it = code.begin(); it != code.end(); it++ ) {
+    std::cout << +it->first << " ";
+    std::copy(it->second.begin(), it->second.end(),
+    std::ostream_iterator<bool>(std::cout));
+    std::cout << std::endl;
+    }
 }

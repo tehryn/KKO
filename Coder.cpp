@@ -1,13 +1,6 @@
 #include "Coder.hpp"
-
-void Coder::staticEncode( std::vector<uint8_t> data, huffmanCode & coder, FILE * outfile ) {
-    std::vector<uint8_t> lengths;
-    std::vector<uint8_t> encoded;
-    std::vector<uint8_t> tree;
-    lengths.reserve(257);
-    tree.reserve( 65536 );
-    encoded.reserve( data.size() );
-
+#include "huffman.hpp" // TODO
+void Coder::getFileHeaders( std::vector<uint8_t> & lengths, std::vector<uint8_t> & tree, huffmanCode & coder ) {
     uint8_t byteToWrite = 0;
     for (size_t byte = 0; byte < 256; byte++) {
         uint8_t len = 0;
@@ -24,7 +17,11 @@ void Coder::staticEncode( std::vector<uint8_t> data, huffmanCode & coder, FILE *
         }
         lengths.push_back( len );
     }
+    this->byteNotWritten = byteToWrite;
+}
 
+void Coder::encode( std::vector<uint8_t> & data, huffmanCode & coder, std::vector<uint8_t> & encoded ) {
+    uint8_t byteToWrite = this->byteNotWritten;
     for ( uint8_t byte : data ) {
         for( bool bit : coder[ byte ] ) {
             if ( this->idx >= 8 ) {
@@ -36,14 +33,30 @@ void Coder::staticEncode( std::vector<uint8_t> data, huffmanCode & coder, FILE *
             this->idx++;
         }
     }
+    this->byteNotWritten = byteToWrite;
+}
 
+void Coder::staticEncode( std::vector<uint8_t> & data, huffmanCode & coder, FILE * outfile ) {
+    std::vector<uint8_t> lengths;
+    std::vector<uint8_t> encoded;
+    std::vector<uint8_t> tree;
+    lengths.reserve( 257 );
+    tree.reserve( 65536 );
+    encoded.reserve( data.size() );
+
+    this->getFileHeaders( lengths, tree, coder );
+    this->encode( data, coder, encoded );
+    uint8_t byteToWrite = this->byteNotWritten;
     uint8_t extra = 8 - this->idx;
     if ( extra > 0 ) {
         byteToWrite <<= extra;
     }
     encoded.push_back( byteToWrite );
-
+    //DEBUG_LINE( "last: ", +byteToWrite );
+    //DEBUG_LINE( "extra: ", +extra );
+    //printMap( coder );
     lengths.push_back( extra );
+
     fwrite( lengths.data(), 1, lengths.size(), outfile );
     fwrite( tree.data(), 1, tree.size(), outfile );
     fwrite( encoded.data(), 1, encoded.size(), outfile );
@@ -51,7 +64,7 @@ void Coder::staticEncode( std::vector<uint8_t> data, huffmanCode & coder, FILE *
 
 
 
-bool Coder::staticDecode( std::vector<uint8_t> data, FILE * outfile ) {
+bool Coder::staticDecode( std::vector<uint8_t> & data, FILE * outfile ) {
     if ( data.size() <= 257 ) {
         return false;
     }
@@ -74,7 +87,7 @@ bool Coder::staticDecode( std::vector<uint8_t> data, FILE * outfile ) {
 
     // nacteme extra bity ktere musime pak ignorovat
     uint8_t extra = dataPtr[ this->idx++ ];
-
+    //DEBUG_LINE( "extra: ", +extra );
     uint8_t extraRead = len % 8;
     if ( data.size() <= 257 + (len + 8 - extraRead ) / 8 ) {
         return false;
@@ -98,6 +111,7 @@ bool Coder::staticDecode( std::vector<uint8_t> data, FILE * outfile ) {
         bit = 0;
         code.clear();
     }
+    //printMap(coder);
 
     Tree * root = new Tree( coder );
     Tree * tmp = root;
@@ -138,6 +152,7 @@ bool Coder::staticDecode( std::vector<uint8_t> data, FILE * outfile ) {
         output.push_back( tmp->data );
         tmp = root;
     }
+    //DEBUG_LINE( "last: ", +byte );
 
     if ( tmp != root ) {
         return false;

@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include "Tree.hpp"
 
 enum programSettings {
     UNSET,
@@ -29,6 +30,8 @@ void print_help();
  * @return vector of bytes.
  */
 std::vector<uint8_t> readBytes( std::string filename );
+
+void printMap( huffmanCode & code );
 
 template<typename T1, typename T2>
 void DEBUG_INLINE(T1 x, T2 y) {

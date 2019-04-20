@@ -5,22 +5,28 @@
 #include "Tree.hpp"
 
 class Coder {
-private:
-    size_t idx;
 protected:
+    size_t idx;
+    size_t byteNotWritten;
     bool useModel;
     bool adaptive;
-    void staticEncode( std::vector<uint8_t> data, huffmanCode & coder, FILE * outfile );
-    bool staticDecode( std::vector<uint8_t> data, FILE * outfile );
+    void getFileHeaders( std::vector<uint8_t> & lengths, std::vector<uint8_t> & tree, huffmanCode & coder );
+    void encode( std::vector<uint8_t> & data, huffmanCode & coder, std::vector<uint8_t> & encoded );
+    void staticEncode( std::vector<uint8_t> & data, huffmanCode & coder, FILE * outfile );
+    bool staticDecode( std::vector<uint8_t> & data, FILE * outfile );
+    void init() {
+        this->byteNotWritten = 0;
+        this->idx            = 0;
+    }
 public:
     Coder( bool useModel, bool adaptive ) {
         this->useModel = useModel;
         this->adaptive = adaptive;
-        this->idx      = 0;
+        this->init();
     }
 
-    void encode( std::vector<uint8_t> data, FILE * output ) {
-        this->idx = 0;
+    void huffmanEncode( std::vector<uint8_t> data, FILE * output ) {
+        this->init();
         std::vector<Tree *> leafs = Tree::loadLeafNodes( data );
         Tree * tree = Tree::buildTree( leafs );
         huffmanCode coder = tree->generateHuffmanCode();
@@ -28,8 +34,8 @@ public:
         this->staticEncode( data, coder, output );
     }
 
-    bool decode( std::vector<uint8_t> data, FILE * output ) {
-        this->idx = 0;
+    bool huffmanDecode( std::vector<uint8_t> data, FILE * output ) {
+        this->init();
         return this->staticDecode( data, output );
     }
 };

@@ -37,7 +37,7 @@ function TestFileEmpty() {
 function TestFilesDiffer() {
     echo -e -n "\tOutput diff  : "
 
-    diff $IMGDIR/$1.raw $TMPDIR/$1.raw
+    diff $IMGDIR/$1.raw $TMPDIR/$1.raw >/dev/null 2>/dev/null
     if [ $? -ne 0 ]; then
         PrintError
     else
@@ -75,7 +75,6 @@ do
         $BINARY -c -i $IMGDIR/$input.raw -o $TMPDIR/$input.huffman -h $mode
         echo "$BINARY -d -i $TMPDIR/$input.huffman -o $TMPDIR/$input.raw -h $mode"
         $BINARY -d -i $TMPDIR/$input.huffman -o $TMPDIR/$input.raw -h $mode
-
         TestFilesDiffer $input
     done
 done

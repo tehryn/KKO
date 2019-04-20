@@ -14,7 +14,7 @@ Coder.o: Coder.cpp Coder.hpp Tree.hpp
 .PHONY: clean quickTest
 
 clean:
-	rm -f huffman.o Tree.o Coder.o huffman
+	rm -f huffman.o Tree.o Coder.o huffman .code.compress .code.decompress .diffIn .diffOut test.raw test.huffman
 
 quickTest:
 	make clean
