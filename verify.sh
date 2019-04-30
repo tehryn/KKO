@@ -5,7 +5,7 @@ BINARY=./huffman
 TMPDIR=./testtmp
 IMGDIR=./data
 INPUTS="hd01 hd02 hd07 hd08 hd09 hd12 nk01"
-MODES="static"
+MODES="static adaptive"
 
 # Colours
 RESTORE="\e[0m"
@@ -37,7 +37,7 @@ function TestFileEmpty() {
 function TestFilesDiffer() {
     echo -e -n "\tOutput diff  : "
 
-    diff $IMGDIR/$1.raw $TMPDIR/$1.raw >/dev/null 2>/dev/null
+    diff $IMGDIR/$1.raw $TMPDIR/$1.$mode.raw >/dev/null 2>/dev/null
     if [ $? -ne 0 ]; then
         PrintError
     else
@@ -71,10 +71,10 @@ for input in $INPUTS
 do
     for mode in $MODES
     do
-        echo "$BINARY -d -i $TMPDIR/$input.huffman -o $TMPDIR/$input.raw -h $mode"
-        $BINARY -c -i $IMGDIR/$input.raw -o $TMPDIR/$input.huffman -h $mode
-        echo "$BINARY -d -i $TMPDIR/$input.huffman -o $TMPDIR/$input.raw -h $mode"
-        $BINARY -d -i $TMPDIR/$input.huffman -o $TMPDIR/$input.raw -h $mode
-        TestFilesDiffer $input
+        echo "$BINARY -c -i $IMGDIR/$input.raw -o $TMPDIR/$input.$mode.huffman -h $mode"
+        $BINARY -c -i $IMGDIR/$input.raw -o $TMPDIR/$input.$mode.huffman -h $mode
+        echo "$BINARY -d -i $TMPDIR/$input.$mode.huffman -o $TMPDIR/$input.$mode.raw -h $mode"
+        $BINARY -d -i $TMPDIR/$input.$mode.huffman -o $TMPDIR/$input.$mode.raw -h $mode
+        TestFilesDiffer $input $mode
     done
 done

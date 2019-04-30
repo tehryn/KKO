@@ -1,38 +1,42 @@
 #include "Coder.hpp"
-#include "huffman.hpp" // TODO
+
 void Coder::getFileHeaders( std::vector<uint8_t> & lengths, std::vector<uint8_t> & tree, huffmanCode & coder ) {
     uint8_t byteToWrite = 0;
+    size_t index = this->idx;
     for (size_t byte = 0; byte < 256; byte++) {
         uint8_t len = 0;
         if ( coder.find( byte ) != coder.end() ) {
             len = coder[ byte ].size();
             for ( bool bit : coder[ byte ] ) {
-                if ( this->idx++ >= 8 ) {
+                if ( index++ >= 8 ) {
                     tree.push_back( byteToWrite );
                     byteToWrite = 0;
-                    this->idx = 1;
+                    index = 1;
                 }
                 byteToWrite = (byteToWrite << 1) | bit;
             }
         }
         lengths.push_back( len );
     }
+    this->idx = index;
     this->byteNotWritten = byteToWrite;
 }
 
 void Coder::encode( std::vector<uint8_t> & data, huffmanCode & coder, std::vector<uint8_t> & encoded ) {
     uint8_t byteToWrite = this->byteNotWritten;
+    size_t index = this->idx;
     for ( uint8_t byte : data ) {
         for( bool bit : coder[ byte ] ) {
-            if ( this->idx >= 8 ) {
+            if ( index >= 8 ) {
                 encoded.push_back( byteToWrite );
                 byteToWrite = 0;
-                this->idx = 0;
+                index = 0;
             }
             byteToWrite = (byteToWrite << 1) | bit;
-            this->idx++;
+            index++;
         }
     }
+    this->idx = index;
     this->byteNotWritten = byteToWrite;
 }
 
@@ -41,30 +45,130 @@ void Coder::staticEncode( std::vector<uint8_t> & data, huffmanCode & coder, FILE
     std::vector<uint8_t> encoded;
     std::vector<uint8_t> tree;
     lengths.reserve( 257 );
+    lengths.push_back(0);
     tree.reserve( 65536 );
     encoded.reserve( data.size() );
 
     this->getFileHeaders( lengths, tree, coder );
     this->encode( data, coder, encoded );
-    uint8_t byteToWrite = this->byteNotWritten;
     uint8_t extra = 8 - this->idx;
     if ( extra > 0 ) {
-        byteToWrite <<= extra;
+        this->byteNotWritten <<= extra;
     }
-    encoded.push_back( byteToWrite );
-    //DEBUG_LINE( "last: ", +byteToWrite );
-    //DEBUG_LINE( "extra: ", +extra );
-    //printMap( coder );
-    lengths.push_back( extra );
-
+    encoded.push_back( this->byteNotWritten );
+    lengths[0] = extra;
+    this->idx = 0;
     fwrite( lengths.data(), 1, lengths.size(), outfile );
     fwrite( tree.data(), 1, tree.size(), outfile );
     fwrite( encoded.data(), 1, encoded.size(), outfile );
 }
 
+void Coder::adaptiveEncode( std::vector<uint8_t> & data, Tree * root, FILE * outfile ) {
+    std::vector<uint8_t> encoded;
+    encoded.reserve( data.size() );
 
+    std::vector<Tree *> nodes;
+    std::vector<Tree *> leaves;
+    std::vector<Tree *> rest;
+    leaves.reserve(1024);
+    nodes.reserve(1024);
+    rest.reserve(512);
 
-bool Coder::staticDecode( std::vector<uint8_t> & data, FILE * outfile ) {
+    root->getLeaves( leaves, nodes );
+    root->setDepth(0);
+    root->reverseInorder( nodes );
+
+    huffmanCode coder = root->generateHuffmanCode();
+    Tree * node = nullptr;
+    uint8_t byteToWrite = this->byteNotWritten;
+    size_t index = this->idx;
+    for ( uint8_t byte : data ) {
+        for( bool bit : coder[ byte ] ) {
+            if ( index >= 8 ) {
+                encoded.push_back( byteToWrite );
+                byteToWrite = 0;
+                index = 0;
+            }
+            byteToWrite = (byteToWrite << 1) | bit;
+            index++;
+        }
+        node = root->find( coder[ byte ] );
+        if ( node->update( nodes ) ) {
+            coder = root->generateHuffmanCode();
+        }
+    }
+
+    uint8_t extra = 8 - index;
+    if ( extra > 0 ) {
+        byteToWrite <<= extra;
+    }
+    this->idx = 0;
+    extra |= ( 1 << 4 );
+    encoded.push_back( byteToWrite );
+
+    fwrite( &extra, 1, 1, outfile );
+    fwrite( encoded.data(), 1, encoded.size(), outfile );
+}
+
+bool Coder::adaptiveDecode( std::vector<uint8_t> & data, Tree * root, FILE * outfile, uint8_t extra ) {
+    std::vector<uint8_t> decoded;
+    decoded.reserve( data.size() << 1 );
+    uint8_t * dataPtr = data.data();
+
+    std::vector<Tree *> nodes;
+    std::vector<Tree *> leaves;
+    std::vector<Tree *> rest;
+    leaves.reserve(1024);
+    nodes.reserve(1024);
+    rest.reserve(512);
+
+    root->getLeaves( leaves, nodes );
+    root->setDepth(0);
+    root->reverseInorder( nodes );
+
+    Tree * tmp    = root;
+    uint8_t byte  = 0;
+    size_t end    = data.size() - ( extra > 0 ? 1 : 0 );
+    size_t index = this->idx;
+    while( index < end ) {
+        byte = dataPtr[ index++ ];
+        for ( uint8_t i = 0; i < 8; i++ ) {
+            if ( tmp->left == nullptr ) {
+                decoded.push_back( tmp->data );
+                tmp->update( nodes );
+                tmp = root;
+            }
+            tmp = ( byte & ( 1 << ( 7 - i ) ) ) ? tmp->right : tmp->left;
+        }
+    }
+    if ( extra > 0 ) {
+        extra = 8 - extra;
+        byte = dataPtr[ index++ ];
+        for ( size_t i = 0; i < extra; i++ ) {
+            if ( tmp->right == nullptr && tmp->left == nullptr ) {
+                decoded.push_back( tmp->data );
+                tmp->update( nodes );
+                tmp = root;
+            }
+            tmp = ( byte & ( 1 << ( 7 - i ) ) ) ? tmp->right : tmp->left;
+        }
+    }
+
+    if ( tmp->right == nullptr && tmp->left == nullptr ) {
+        decoded.push_back( tmp->data );
+        tmp = root;
+    }
+
+    if ( tmp != root ) {
+        return false;
+    }
+
+    this->idx = 0;
+    fwrite( decoded.data(), 1, decoded.size(), outfile );
+    return true;
+}
+
+bool Coder::staticDecode( std::vector<uint8_t> & data, FILE * outfile, uint8_t extra ) {
     if ( data.size() <= 257 ) {
         return false;
     }
@@ -76,18 +180,16 @@ bool Coder::staticDecode( std::vector<uint8_t> & data, FILE * outfile ) {
     huffmanCode coder;
     uint8_t byte = 0;
     uint8_t * dataPtr = data.data();
+    size_t index = this->idx;
 
     // nacteme delky
-    while( this->idx < 256 ) {
-        byte = dataPtr[ this->idx++ ];
+    while( index < 257 ) {
+        byte = dataPtr[ index++ ];
         lengths.push_back( byte );
         len += byte;
         //std::cout << +byte << '\n';
     }
 
-    // nacteme extra bity ktere musime pak ignorovat
-    uint8_t extra = dataPtr[ this->idx++ ];
-    //DEBUG_LINE( "extra: ", +extra );
     uint8_t extraRead = len % 8;
     if ( data.size() <= 257 + (len + 8 - extraRead ) / 8 ) {
         return false;
@@ -101,7 +203,7 @@ bool Coder::staticDecode( std::vector<uint8_t> & data, FILE * outfile ) {
         uint8_t bit = 0;
         while ( bit < codeLen ) {
             if ( shift >= 8 ) {
-                byte = dataPtr[ this->idx++ ];
+                byte = dataPtr[ index++ ];
                 shift = 0;
             }
             code.push_back( byte & ( 1 << ( 7 - shift++ ) ) );
@@ -125,8 +227,8 @@ bool Coder::staticDecode( std::vector<uint8_t> & data, FILE * outfile ) {
     }
 
     size_t end = data.size() - ( extra > 0 ? 1 : 0 );
-    while( this->idx < end ) {
-        byte = dataPtr[ this->idx++ ];
+    while( index < end ) {
+        byte = dataPtr[ index++ ];
         for ( uint8_t i = 0; i < 8; i++ ) {
             if ( tmp->right == nullptr && tmp->left == nullptr ) {
                 output.push_back( tmp->data );
@@ -138,7 +240,7 @@ bool Coder::staticDecode( std::vector<uint8_t> & data, FILE * outfile ) {
 
     if ( extra > 0 ) {
         extra = 8 - extra;
-        byte = dataPtr[ this->idx++ ];
+        byte = dataPtr[ index++ ];
         for ( size_t i = 0; i < extra; i++ ) {
             if ( tmp->right == nullptr && tmp->left == nullptr ) {
                 output.push_back( tmp->data );
@@ -152,11 +254,11 @@ bool Coder::staticDecode( std::vector<uint8_t> & data, FILE * outfile ) {
         output.push_back( tmp->data );
         tmp = root;
     }
-    //DEBUG_LINE( "last: ", +byte );
 
     if ( tmp != root ) {
         return false;
     }
+    this->idx = 0;
     delete root;
     fwrite( output.data(), 1, output.size(), outfile );
     return true;

@@ -85,5 +85,6 @@ Tree * Tree::buildTree( std::vector<Tree *> & leaves, std::vector<Tree *> * node
             leaves.push_back( root );
         }
     }
+
     return root;
 }

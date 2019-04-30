@@ -11,7 +11,10 @@ Tree.o: Tree.cpp Tree.hpp
 Coder.o: Coder.cpp Coder.hpp Tree.hpp
 	g++ $(CCFLAGS) -c $< -o $@
 
-.PHONY: clean quickTest
+.PHONY: clean quickTest zip
+
+zip:
+	zip kko_xmatej52.zip Tree.cpp Tree.hpp Coder.cpp Coder.hpp huffman.cpp huffman.hpp Makefile
 
 clean:
 	rm -f huffman.o Tree.o Coder.o huffman .code.compress .code.decompress .diffIn .diffOut test.raw test.huffman
@@ -19,8 +22,8 @@ clean:
 quickTest:
 	make clean
 	make
-	./huffman -i data/hd01.raw -o test.huffman -c -h static >.code.compress
-	./huffman -i test.huffman -o test.raw -d -h static >.code.decompress
-	xxd -b data/hd01.raw > .diffIn
+	./huffman -i data/hd07.raw -o test.huffman -c -h adaptive >.code.compress
+	./huffman -i test.huffman -o test.raw -d -h adaptive >.code.decompress
+	xxd -b data/hd07.raw > .diffIn
 	xxd -b test.raw > .diffOut
-	diff .diffIn .diffOut
+	#diff .diffIn .diffOut
