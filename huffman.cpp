@@ -2,12 +2,12 @@
 #include "Coder.hpp"
 
 int main( int argc, char **argv ) {
-    int opt, mode = UNSET, coding = UNSET;
+    int opt, mode = UNSET, coding = UNSET, effort = NO_EFFORT;
     std::vector<uint8_t> inputData;
     bool useModel = false;
 
     FILE * outfile = nullptr;
-    while ( ( opt = getopt( argc, argv, ":cdh:mi:o:" ) ) != -1 ) {
+    while ( ( opt = getopt( argc, argv, ":cd0123456789h:mi:o:" ) ) != -1 ) {
         switch ( opt ) {
             case 'c':
                 if ( mode != UNSET ) {
@@ -68,6 +68,80 @@ int main( int argc, char **argv ) {
                     return INVALID_ARGUMENTS;
                 }
                 break;
+            case '9':
+                if ( effort != NO_EFFORT ) {
+                    std::cerr << "Parameter effort is set more than once." << std::endl;
+                    return INVALID_ARGUMENTS;
+                }
+                else {
+                    effort = EFFORT_9;
+                }
+                break;
+            case '8':
+                if ( effort != NO_EFFORT ) {
+                    std::cerr << "Parameter effort is set more than once." << std::endl;
+                    return INVALID_ARGUMENTS;
+                }
+                else {
+                    effort = EFFORT_8;
+                }
+                break;
+            case '7':
+                if ( effort != NO_EFFORT ) {
+                    std::cerr << "Parameter effort is set more than once." << std::endl;
+                    return EFFORT_7;
+                }
+                else {
+                    effort = EFFORT_7;
+                }
+                break;
+            case '6':
+                if ( effort != NO_EFFORT ) {
+                    std::cerr << "Parameter effort is set more than once." << std::endl;
+                    return INVALID_ARGUMENTS;
+                }
+                else {
+                    effort = EFFORT_6;
+                }
+                break;
+            case '5':
+                if ( effort != NO_EFFORT ) {
+                    std::cerr << "Parameter effort is set more than once." << std::endl;
+                    return INVALID_ARGUMENTS;
+                }
+                else {
+                    effort = EFFORT_5;
+                }
+                break;
+            case '4':
+                if ( effort != NO_EFFORT ) {
+                    std::cerr << "Parameter effort is set more than once." << std::endl;
+                    return INVALID_ARGUMENTS;
+                }
+                else {
+                    effort = EFFORT_4;
+                }
+                break;
+            case '3':
+                if ( effort != NO_EFFORT ) {
+                    std::cerr << "Parameter effort is set more than once." << std::endl;
+                    return INVALID_ARGUMENTS;
+                }
+                else {
+                    effort = EFFORT_3;
+                }
+                break;
+            case '2':
+            case '1':
+            case '0':
+                if ( effort != NO_EFFORT ) {
+                    std::cerr << "Parameter effort is set more than once." << std::endl;
+                    return INVALID_ARGUMENTS;
+                }
+                else {
+                    effort = MINIMUM_EFFORT;
+                }
+                break;
             case ':':
                 if ( optopt == 'h' ) {
                     print_help();
@@ -89,7 +163,7 @@ int main( int argc, char **argv ) {
         return INVALID_ARGUMENTS;
     }
 
-    Coder huffmanImp = Coder( useModel, coding == ADAPTIVE );
+    Coder huffmanImp = Coder( useModel, coding == ADAPTIVE, effort == NO_EFFORT ? EFFORT_8 : effort );
 
     if ( mode == COMPRESS ) {
         huffmanImp.huffmanEncode( inputData, outfile );

@@ -5,6 +5,7 @@ BINARY=./huff_codec
 TMPDIR=./testtmp
 IMGDIR=./data
 INPUTS="hd01 hd02 hd07 hd08 hd09 hd12 nk01"
+EFFORTS="-8 -7 -6 -5 -4 -3 -2 -1 -0"
 MODES="static adaptive"
 
 # Colours
@@ -71,20 +72,38 @@ for input in $INPUTS
 do
     for mode in $MODES
     do
-        echo "$BINARY -c -i $IMGDIR/$input.raw -o $TMPDIR/$input.$mode.huffman -h $mode -m"
-        $BINARY -c -i $IMGDIR/$input.raw -o $TMPDIR/$input.$mode.model.huffman -h $mode -m
+        echo "$BINARY -c -i $IMGDIR/$input.raw -o $TMPDIR/$input.${mode}.model.huffman -h $mode -m"
+        $BINARY -c -i $IMGDIR/$input.raw -o $TMPDIR/$input.${mode}.model.huffman -h $mode -m $effort
 
-        echo "$BINARY -d -i $TMPDIR/$input.$mode.huffman -o $TMPDIR/$input.$mode.raw -h $mode -m"
-        $BINARY -d -i $TMPDIR/$input.$mode.model.huffman -o $TMPDIR/$input.$mode.model.raw -h $mode -m
+        echo "$BINARY -d -i $TMPDIR/$input.${mode}.model.huffman -o $TMPDIR/$input.${mode}.model.raw -h $mode -m"
+        $BINARY -d -i $TMPDIR/$input.${mode}.model.huffman -o $TMPDIR/$input.${mode}.model.raw -h $mode -m
 
-        TestFilesDiffer $input $mode.model
+        TestFilesDiffer $input ${mode}.model
 
-        echo "$BINARY -c -i $IMGDIR/$input.raw -o $TMPDIR/$input.$mode.huffman -h $mode"
-        $BINARY -c -i $IMGDIR/$input.raw -o $TMPDIR/$input.$mode.huffman -h $mode
+        echo "$BINARY -c -i $IMGDIR/$input.raw -o $TMPDIR/$input.${mode}.huffman -h $mode $effort"
+        $BINARY -c -i $IMGDIR/$input.raw -o $TMPDIR/$input.${mode}.huffman -h $mode $effort
 
-        echo "$BINARY -d -i $TMPDIR/$input.$mode.huffman -o $TMPDIR/$input.$mode.raw -h $mode"
-        $BINARY -d -i $TMPDIR/$input.$mode.huffman -o $TMPDIR/$input.$mode.raw -h $mode
+        echo "$BINARY -d -i $TMPDIR/$input.${mode}.huffman -o $TMPDIR/$input.${mode}.raw -h $mode"
+        $BINARY -d -i $TMPDIR/$input.${mode}.huffman -o $TMPDIR/$input.${mode}.raw -h $mode
 
-        TestFilesDiffer $input $mode
+        TestFilesDiffer $input ${mode}
+        for effort in $EFFORTS
+        do
+            echo "$BINARY -c -i $IMGDIR/$input.raw -o $TMPDIR/$input.${mode}${effort}.model.huffman -h $mode -m $effort"
+            $BINARY -c -i $IMGDIR/$input.raw -o $TMPDIR/$input.${mode}${effort}.model.huffman -h $mode -m $effort
+
+            echo "$BINARY -d -i $TMPDIR/$input.${mode}${effort}.model.huffman -o $TMPDIR/$input.${mode}${effort}.model.raw -h $mode -m $effort"
+            $BINARY -d -i $TMPDIR/$input.${mode}${effort}.model.huffman -o $TMPDIR/$input.${mode}${effort}.model.raw -h $mode -m $effort
+
+            TestFilesDiffer $input ${mode}${effort}.model
+
+            echo "$BINARY -c -i $IMGDIR/$input.raw -o $TMPDIR/$input.${mode}${effort}.huffman -h $mode $effort"
+            $BINARY -c -i $IMGDIR/$input.raw -o $TMPDIR/$input.${mode}${effort}.huffman -h $mode $effort
+
+            echo "$BINARY -d -i $TMPDIR/$input.${mode}${effort}.huffman -o $TMPDIR/$input.${mode}${effort}.raw -h $mode $effort"
+            $BINARY -d -i $TMPDIR/$input.${mode}${effort}.huffman -o $TMPDIR/$input.${mode}${effort}.raw -h $mode $effort
+
+            TestFilesDiffer $input ${mode}${effort}
+        done
     done
 done

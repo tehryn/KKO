@@ -1,7 +1,7 @@
 CCFLAGS = -std=c++11 -o3 -march=native
 all: huff_codec
 
-debug : CCFLAGS = -std=c++11 -g -DDEBUG
+debug : CCFLAGS = -std=c++11 -g
 debug : all
 
 analyze: CCFLAGS += -pg

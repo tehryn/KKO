@@ -49,7 +49,8 @@ Tree * Tree::buildTree( std::vector<Tree *> & nodes ) {
         Tree * right = nodes.front();
         nodes.erase( nodes.begin() );
         root  = new Tree( left->count + right->count, 0, left, right );
-
+        left->parent = root;
+        right->parent = root;
         if ( nodes.empty() ) {
             return root;
         }
@@ -66,6 +67,7 @@ Tree * Tree::buildTree( std::vector<Tree *> & nodes ) {
             nodes.push_back( root );
         }
     }
+    root->setDepth(0);
     return root;
 }
 
