@@ -29,6 +29,7 @@ int main( int argc, char **argv ) {
                     return INVALID_ARGUMENTS;
                 }
                 useModel = true;
+                break;
             case 'i':
                 if ( inputData.size() != 0 ) {
                     std::cerr << "Parameter -i is set more than once." << std::endl;
@@ -75,7 +76,7 @@ int main( int argc, char **argv ) {
                 std::cerr << "Option "<< static_cast<char>(optopt) << " requires an argument." << std::endl;
                 return INVALID_ARGUMENTS;
             case '?':
-                std::cerr << "unknown option: "<< optopt << std::endl;
+                std::cerr << "unknown option: "<< +optopt << std::endl;
                 break;
         }
     }

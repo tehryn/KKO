@@ -16,7 +16,7 @@ class Tree {
 public:
     size_t count;
     uint8_t data;
-    uint8_t depth;
+    size_t depth;
     Tree * left;
     Tree * right;
     Tree * parent;
@@ -63,22 +63,22 @@ public:
         delete this->right;
     }
 
-    static Tree * buildTree( std::vector<Tree *> & leaves, std::vector<Tree *> * nodes = nullptr );
+    static Tree * buildTree( std::vector<Tree *> & leaves );
 
     static Tree * initAdaptiveTree();
 
     static std::vector<Tree *> loadLeafNodes( std::vector<uint8_t> data );
 
-    void setDepth( uint8_t parentValue ) {
-        this->depth = parentValue + 1;
+    void setDepth( size_t parentValue ) {
+        this->depth = parentValue++;
         if ( this->left != nullptr ) {
-            this->left->setDepth( this->depth );
-            this->right->setDepth( this->depth );
+            this->left->setDepth( parentValue );
+            this->right->setDepth( parentValue );
         }
     }
 
     void generateHuffmanCode( const bitSet & prefix, huffmanCode & coder ) {
-        if ( this->left == nullptr && this->right == nullptr ) {
+        if ( this->left == nullptr ) {
             coder[ this->data ] = prefix;
         }
         else {
@@ -98,6 +98,11 @@ public:
         return coder;
     }
 
+    void generateHuffmanCode( huffmanCode & coder ) {
+        bitSet prefix;
+        this->generateHuffmanCode( prefix, coder );
+    }
+
     void reverseInorder( std::vector<Tree *> & vec ) {
         if ( this->right != nullptr ) {
             this->right->reverseInorder( vec );
@@ -109,26 +114,9 @@ public:
         }
     }
 
-
     static bool comparePointers( Tree * left, Tree * right ) {
         return left->count > right ->count;
     }
-
-    friend std::ostream & operator << ( std::ostream & stream, const Tree & node) {
-        bool leaf = node.left == nullptr;
-        if ( !leaf ) {
-            stream << *(node.left);
-            stream << "[ c:" << node.count << " ]";
-            stream << *(node.right);
-        }
-        else {
-            stream << "[ d:" << +node.data << ", c:" << node.count << " ]";
-
-        }
-
-        return stream;
-    }
-
 
     void getLeaves( std::vector<Tree *> & leaves, std::vector<Tree *> & nodes ) {
         if ( this->left != nullptr ) {
@@ -149,49 +137,7 @@ public:
         return seek;
     }
 
-    bool update( std::vector<Tree *> nodes ) {
-        if ( this->parent != nullptr ) {
-            bool modified = false;
-            for( Tree * node : nodes ) {
-                if ( node->count == this->count && this->depth >= node->depth && this->parent != node && node != this ) {
-                    modified = true;
-                    if ( this == this->parent->left ) {
-                        this->parent->left = node;
-                    }
-                    else {
-                        this->parent->right = node;
-                    }
-
-                    if ( node == node->parent->left ) {
-                        node->parent->left = this;
-                    }
-                    else {
-                        node->parent->right = this;
-                    }
-
-                    std::swap( this->parent, node->parent );
-                    std::swap( this->depth, node->depth );
-                    node->setDepth( node->depth );
-                    this->setDepth( this->depth );
-                    break;
-                }
-            }
-
-            this->count++;
-            Tree * root = this->parent == nullptr ? this : this->parent;
-            while ( root->parent != nullptr ) {
-                root = root->parent;
-            }
-            nodes.clear();
-            root->reverseInorder( nodes );
-
-            return this->parent->update( nodes ) || modified;
-        }
-        else {
-            this->count++;
-            return false;
-        }
-    }
+    bool update( std::vector<Tree *> & nodes );
 };
 
 #endif

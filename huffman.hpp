@@ -10,7 +10,8 @@ enum programSettings {
     COMPRESS,
     DECOMPRESS,
     STATIC,
-    ADAPTIVE
+    ADAPTIVE,
+    MAXIMUM_EFFORT
 };
 
 enum returnCodes {

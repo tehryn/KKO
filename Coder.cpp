@@ -56,6 +56,10 @@ void Coder::staticEncode( std::vector<uint8_t> & data, huffmanCode & coder, FILE
         this->byteNotWritten <<= extra;
     }
     encoded.push_back( this->byteNotWritten );
+    if ( this->useModel ) {
+        extra |= ( 1 << 5 );
+    }
+
     lengths[0] = extra;
     this->idx = 0;
     fwrite( lengths.data(), 1, lengths.size(), outfile );
@@ -93,9 +97,12 @@ void Coder::adaptiveEncode( std::vector<uint8_t> & data, Tree * root, FILE * out
             index++;
         }
         node = root->find( coder[ byte ] );
-        if ( node->update( nodes ) ) {
-            coder = root->generateHuffmanCode();
-        }
+            if ( node->update( nodes ) ) {
+                root->setDepth( root->depth );
+                nodes.clear();
+                root->reverseInorder( nodes );
+                root->generateHuffmanCode( coder );
+            }
     }
 
     uint8_t extra = 8 - index;
@@ -104,13 +111,15 @@ void Coder::adaptiveEncode( std::vector<uint8_t> & data, Tree * root, FILE * out
     }
     this->idx = 0;
     extra |= ( 1 << 4 );
+    if ( this->useModel ) {
+        extra |= ( 1 << 5 );
+    }
     encoded.push_back( byteToWrite );
-
     fwrite( &extra, 1, 1, outfile );
     fwrite( encoded.data(), 1, encoded.size(), outfile );
 }
 
-bool Coder::adaptiveDecode( std::vector<uint8_t> & data, Tree * root, FILE * outfile, uint8_t extra ) {
+bool Coder::adaptiveDecode( std::vector<uint8_t> & data, Tree * root, FILE * outfile, uint8_t extra, bool model, bool effort ) {
     std::vector<uint8_t> decoded;
     decoded.reserve( data.size() << 1 );
     uint8_t * dataPtr = data.data();
@@ -129,13 +138,17 @@ bool Coder::adaptiveDecode( std::vector<uint8_t> & data, Tree * root, FILE * out
     Tree * tmp    = root;
     uint8_t byte  = 0;
     size_t end    = data.size() - ( extra > 0 ? 1 : 0 );
-    size_t index = this->idx;
+    size_t index  = this->idx;
     while( index < end ) {
         byte = dataPtr[ index++ ];
         for ( uint8_t i = 0; i < 8; i++ ) {
             if ( tmp->left == nullptr ) {
                 decoded.push_back( tmp->data );
-                tmp->update( nodes );
+                if ( tmp->update( nodes ) ) {
+                    root->setDepth( root->depth );
+                    nodes.clear();
+                    root->reverseInorder( nodes );
+                }
                 tmp = root;
             }
             tmp = ( byte & ( 1 << ( 7 - i ) ) ) ? tmp->right : tmp->left;
@@ -145,16 +158,20 @@ bool Coder::adaptiveDecode( std::vector<uint8_t> & data, Tree * root, FILE * out
         extra = 8 - extra;
         byte = dataPtr[ index++ ];
         for ( size_t i = 0; i < extra; i++ ) {
-            if ( tmp->right == nullptr && tmp->left == nullptr ) {
+            if ( tmp->left == nullptr ) {
                 decoded.push_back( tmp->data );
-                tmp->update( nodes );
+                if ( tmp->update( nodes ) ) {
+                    root->setDepth( root->depth );
+                    nodes.clear();
+                    root->reverseInorder( nodes );
+                }
                 tmp = root;
             }
             tmp = ( byte & ( 1 << ( 7 - i ) ) ) ? tmp->right : tmp->left;
         }
     }
 
-    if ( tmp->right == nullptr && tmp->left == nullptr ) {
+    if ( tmp->left == nullptr ) {
         decoded.push_back( tmp->data );
         tmp = root;
     }
@@ -164,11 +181,14 @@ bool Coder::adaptiveDecode( std::vector<uint8_t> & data, Tree * root, FILE * out
     }
 
     this->idx = 0;
+    if ( model ) {
+        Coder::differences2data( decoded );
+    }
     fwrite( decoded.data(), 1, decoded.size(), outfile );
     return true;
 }
 
-bool Coder::staticDecode( std::vector<uint8_t> & data, FILE * outfile, uint8_t extra ) {
+bool Coder::staticDecode( std::vector<uint8_t> & data, FILE * outfile, uint8_t extra, bool model ) {
     if ( data.size() <= 257 ) {
         return false;
     }
@@ -260,6 +280,26 @@ bool Coder::staticDecode( std::vector<uint8_t> & data, FILE * outfile, uint8_t e
     }
     this->idx = 0;
     delete root;
+    if ( model ) {
+        Coder::differences2data( output );
+    }
     fwrite( output.data(), 1, output.size(), outfile );
     return true;
+}
+
+void Coder::data2differences( std::vector<uint8_t> & data ) {
+    uint8_t prev = 0;
+    uint8_t diff = 0;
+    for( std::vector<uint8_t>::iterator i = data.begin(); i != data.end(); i++ ) {
+        diff = prev - *i;
+        prev = *i;
+        *i = diff;
+    }
+}
+
+void Coder::differences2data( std::vector<uint8_t> & data ) {
+    uint8_t prev = 0;
+    for( std::vector<uint8_t>::iterator i = data.begin(); i != data.end(); i++ ) {
+        *i = prev = prev - *i;
+    }
 }
