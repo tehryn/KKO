@@ -1,12 +1,21 @@
+/**
+ * File: huffman.cpp
+ * Author: Jiri Matejka (xmatej52)
+ * Modified: 02. 05. 2019
+ * Description: Implementation of application where main function and some other usefull functions are implemented
+ */
 #include "huffman.hpp"
-#include "Coder.hpp"
 
 int main( int argc, char **argv ) {
+    // program settings
     int opt, mode = UNSET, coding = UNSET, effort = NO_EFFORT;
-    std::vector<uint8_t> inputData;
     bool useModel = false;
-
     FILE * outfile = nullptr;
+
+    // data from input file
+    std::vector<uint8_t> inputData;
+
+    // parse argument
     while ( ( opt = getopt( argc, argv, ":cd0123456789h:mi:o:" ) ) != -1 ) {
         switch ( opt ) {
             case 'c':
@@ -155,7 +164,8 @@ int main( int argc, char **argv ) {
         }
     }
 
-    if ( coding == UNSET || mode == UNSET || outfile == nullptr || inputData.size() == 0 ) {
+    // test if all argumets are set
+    if ( ( coding == UNSET && mode == COMPRESS ) || mode == UNSET || outfile == nullptr || inputData.size() == 0 ) {
         std::cerr << "Not all program arguments were specified. Run './huffman -h' for help." << std::endl;
         if ( outfile != nullptr ) {
             fclose( outfile );
@@ -163,14 +173,17 @@ int main( int argc, char **argv ) {
         return INVALID_ARGUMENTS;
     }
 
+    // Creates huffman coder
     Coder huffmanImp = Coder( useModel, coding == ADAPTIVE, effort == NO_EFFORT ? EFFORT_8 : effort );
 
+    // compress/decompress
     if ( mode == COMPRESS ) {
         huffmanImp.huffmanEncode( inputData, outfile );
     }
     else {
         if ( !huffmanImp.huffmanDecode( inputData, outfile ) ) {
             std::cerr << "Corrupted input file." << std::endl;
+            fclose( outfile );
             return CORRUPTED_INPUT;
         }
     }
@@ -180,19 +193,11 @@ int main( int argc, char **argv ) {
 }
 
 void print_help() {
-    std::cout << "./huffman -c|d -h static|adaptive [-m] -i INPUT -o OUTPUT" << std::endl;
+    std::cout << "./huffman -c|d -h [static|adaptive] [-m] -i INPUT -o OUTPUT [-0|1|2|3|4|5|6|7|8|9]" << std::endl;
+    std::cout << "if -d is set, arguments -h, -m and efforts are ignored" << std::endl;
 }
 
 std::vector<uint8_t> readBytes( std::string filename ) {
     std::ifstream file( filename, std::ios::binary );
     return std::vector<uint8_t>( ( std::istreambuf_iterator<char>( file ) ), std::istreambuf_iterator<char>() );
-}
-
-void printMap( huffmanCode & code ) {
-    for ( huffmanCode::const_iterator it = code.begin(); it != code.end(); it++ ) {
-    std::cout << +it->first << " ";
-    std::copy(it->second.begin(), it->second.end(),
-    std::ostream_iterator<bool>(std::cout));
-    std::cout << std::endl;
-    }
 }

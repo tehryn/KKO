@@ -1,9 +1,16 @@
+/**
+ * File: huffman.hpp
+ * Author: Jiri Matejka (xmatej52)
+ * Modified: 02. 05. 2019
+ * Description: header file of application where main function and some other usefull functions are implemented
+ */
 #ifndef __HUFFMAN
 #define __HUFFMAN
 #include <iostream>
 #include <fstream>
 #include <vector>
 #include "Tree.hpp"
+#include "Coder.hpp"
 
 enum programSettings {
     UNSET,
@@ -31,7 +38,6 @@ void print_help();
  */
 std::vector<uint8_t> readBytes( std::string filename );
 
-void printMap( huffmanCode & code );
 
 template<typename T1, typename T2>
 void DEBUG_INLINE(T1 x, T2 y) {
