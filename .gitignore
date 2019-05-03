@@ -34,3 +34,5 @@
 huffman
 .fuse*
 testtmp
+huff_codec
+*.csv
