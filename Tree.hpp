@@ -181,7 +181,7 @@ public:
      * @return       true if left is greater then right
      */
     static bool comparePointers( Tree * left, Tree * right ) {
-        return left->count > right ->count;
+        return left->count < right ->count;
     }
 
     /**

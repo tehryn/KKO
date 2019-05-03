@@ -1,0 +1,95 @@
+\documentclass[11pt,a4paper,titlepage]{article}
+\usepackage[left=1.5cm,text={18cm, 25cm},top=2.5cm]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage{setspace}
+\usepackage{graphicx}
+\usepackage[czech]{babel}
+\usepackage{float}
+\usepackage{color}
+\usepackage{hyperref}
+\usepackage{fancyvrb}
+\setlength{\parindent}{0cm}
+\setlength{\parskip}{1em}
+\sloppy
+
+\hypersetup{
+	colorlinks=true,
+	linktoc=all,
+	linkcolor=blue,
+	citecolor=red,
+	urlcolor=blue,
+}
+
+\begin{document}
+
+		\setstretch{0.5}
+		\begin{center}
+
+			\includegraphics[width = 150mm]{logo.png}\\
+
+			\vspace{\stretch{0.382}}
+
+			\LARGE
+			Kódování a komprese dat\\
+			Dokumentace k projektu -- Huffmanovo kódování\\
+			\vspace{\stretch{0.618}}
+
+		\end{center}
+
+	\Large{\today} \hfill Jiří Matějka (xmatej52)
+	\thispagestyle{empty}
+	\newpage
+	\setcounter{page}{1}
+
+    \tableofcontents
+	\newpage
+	\newpage
+
+    \section{Úvod}
+        Tato práce vznikla jako projekt do předmětu Kódování a komprese dat na školve Vysoké učení technické v Brně.
+        Práce se zabývá implementací a vyhodnocením huffmanova kódování v několika režimech běhu -- statické huffmanovo kódování,
+        adaptivní huffmanovo kódování, statické huffmanovo kódování s modelem adaptivní huffmanovo kódování s modelem.
+
+    \section{Implementace}
+        Projekt je implementován v jazyce C\texttt{++} a samotná implementace je rozdělena do 3 modulů -- huffman, Coder a Tree.
+        V modulu huffman je implementováno zpracování argumentů programu. V modulu Tree je implementace operací s huffmanovým stromem
+        a v modulu Coder je implementace huffmanova kódování a modelu.
+
+        Huffmanův strom je implementován jako třída, kde každý objekt této třídy nese ukazatel na svého rodiče, pravého a levého následníka,
+        data, svou hloubku ve stromu a počet, který obsahuje buď sumu počtu svých potomků nebo, v případě listu, počet výskytů v souboru.
+        Uzel od listu lze v tomto stromě rozlišit tak, že list nemá nastaven své potomky.
+
+        Huffmanovo kování je implementováno jako třída, která využívá huffmanova stromu ke kompreesi a dekompresi dat. Každý komprimovaný soubor obsahuje
+        na svém začátku jeden byte, kde je uložen režim komprese dat. První 3 bity definují vynaložené úsilý během komprese dat, 4. bit definuje
+        použití modelu, 5. bit definuje použití modelu a poslední 3 bity určují počet bitů, které jsou na konci souboru vloženy pro zarovnání velikosti
+        na celé byty. Díky tomuto je dekomprese dat nezávislá na parametrech programu a uživatel nemusí aplikaci spouštět se stejnými parametry, aby
+        dekomprese dat proběhla úspěšně. V případě statické komprese dat je za tímto bytem vloženo dalších 256 bytů, kde jsou uloženy jednotlivé délky
+        použitých kódů, které následují hned po těchto počtech. ZBytek souboru již obsahuje zakódované symboly pomocí huffmanova kódování.
+
+        Kvůli vysoké výpočetní náročnosti implementace adaptivního huffmanova kódování byla aplikace rozšířena o další parametr \texttt{-N}, kde $0 \leq N \leq 9$,
+        který definuje úsilý, který program věnuje kódování jednotlivých symbolů do výstupního souboru. Přestože lze toto úsilý definovat dohromady desíti
+        číslicemi, v projektu je použito jen 7 těchto hodnot -- hodnotám 0 -- 3 je věnováno stejné (nejnižší) úsilý.
+
+        \subsection{Efektivita výpočtu adaptivního kódování}
+            Důvodem, proč implementace adaptivního kódování je výpočetně náročná, je pomalá aktualizace stromu a nutnost
+            po každé jeho aktualizaci znovu vypočítat bitovou reprezentaci každého symbolu. Jednou z možných optimalizací,
+            které by tento problém vyřešily, je využití sourozenecké vlastnosti Huffmanova stromu a strom strom procházet
+            v poli a ne pomocí ukazatelů na levého nebo pravého následníka.
+
+            Původně jsem se domníval, že algoritmus je pomalý kvůli malému množství \texttt{cache hit} při přístupu k datům, tuto doměnku
+            mi vyvrátil nástroj valgrind, který naměřil $99,9\%$ \texttt{cache hit}. Důvodem proč si vše držím v paměti chache je skutečnost,
+            že výsledný strom je poměrně malý a navíc data pro něj alokuji v jednom jediném místě kódu a tak jsou jedny uzly stromu v paněti uloženy
+            vedle sebe.
+
+            Další nástroj, který jsem použil pro zjištění velké časové náročnosti mé implementace je gprof. Ten mě přesvědčil v mé doměnce,
+            že drtivá většina programu se vykonává ve funkci aktualizace stromu a aktualizaci bitové reprezentace jednotlivých znaků.
+
+    \section{Vyhodnocení}
+
+    \section{Závěr}
+        V rámci této práce byla implementována konzolová aplikace využívající huffmanova kódování. Aplikace umí komprimovat data pomocí
+        statického kódování s využitím histogramu a adaptivního kódování. Kompresi dat lze spustit i s modelem, díky kterému je ve většině
+        případech dosaženo lepšího kompresního poměru. Nicméně implementace adaptivního huffmanova kódování nebyla zvolena vhodně a z hlediska
+        časové náročnosti algoritmu je dosahuje velice slabých výsledků (z hlediska komprese dat dosahuje relativně dobrých výsledků).
+
+\end{document}

@@ -36,3 +36,4 @@ huffman
 testtmp
 huff_codec
 *.csv
+*.cson

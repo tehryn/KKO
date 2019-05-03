@@ -24,13 +24,6 @@ std::vector<Tree *> Tree::loadLeafNodes( std::vector<uint8_t> data ) {
     // sorts vector by occurences
     std::sort( nodes.begin(), nodes.end(), Tree::comparePointers );
 
-    // remove unused nodes
-    while( !nodes.empty() && nodes.front()->count == 0  ) {
-        Tree * node = nodes.front();
-        nodes.erase( nodes.begin() );
-        delete node;
-    }
-
     return nodes;
 }
 
