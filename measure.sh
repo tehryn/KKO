@@ -6,7 +6,7 @@ TMPDIR=./testtmp
 IMGDIR=./data
 INPUTS="hd01 hd02 hd07 hd08 hd09 hd12 nk01"
 MODES="static adaptive"
-EFFORTS="9 8 7 6 5 4 3 2 1 0"
+EFFORTS="9"
 
 # Colours
 RESTORE="\e[0m"
@@ -69,8 +69,6 @@ fi
 
 # Loop over modes, models and inputs and measure them
 echo "file;mode;model,effort;maximum compression memory used [KB];compression time [s];maximum decompression memory used [KB];decomression time [s];original size [B];compressed size [B];compression ration"
-for effort in $EFFORTS
-do
     for mode in $MODES
     do
         for model_en in `seq 0 1`

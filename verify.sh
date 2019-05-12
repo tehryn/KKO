@@ -5,7 +5,7 @@ BINARY=./huff_codec
 TMPDIR=./testtmp
 IMGDIR=./data
 INPUTS="hd01 hd02 hd07 hd08 hd09 hd12 nk01"
-EFFORTS="-8 -7 -6 -5 -4 -3 -2 -1 -0"
+EFFORTS="-9 -8 -7 -6 -5 -4 -3 -2 -1 -0"
 MODES="static adaptive"
 
 # Colours

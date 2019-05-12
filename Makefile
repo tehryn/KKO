@@ -22,7 +22,9 @@ Coder.o: Coder.cpp Coder.hpp Tree.hpp
 .PHONY: clean quickTest zip debug all
 
 zip:
-	zip kko_xmatej52.zip Tree.cpp Tree.hpp Coder.cpp Coder.hpp huffman.cpp huffman.hpp Makefile
+	cp doc/xmatej52.pdf ./dokumentace.pdf
+	zip kko_xmatej52.zip Tree.cpp Tree.hpp Coder.cpp Coder.hpp huffman.cpp huffman.hpp Makefile dokumentace.pdf
+	rm dokumentace.pdf
 
 clean:
 	rm -f huffman.o Tree.o Coder.o huff_codec .code.compress .code.decompress .diffIn .diffOut test.raw test.huffman

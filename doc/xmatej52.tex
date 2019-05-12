@@ -46,50 +46,165 @@
 	\newpage
 
     \section{Úvod}
-        Tato práce vznikla jako projekt do předmětu Kódování a komprese dat na školve Vysoké učení technické v Brně.
-        Práce se zabývá implementací a vyhodnocením huffmanova kódování v několika režimech běhu -- statické huffmanovo kódování,
-        adaptivní huffmanovo kódování, statické huffmanovo kódování s modelem adaptivní huffmanovo kódování s modelem.
+        Tato práce vznikla jako projekt do předmětu Kódování a komprese dat na škole Vysoké učení technické v Brně.
+        Práce se zabývá implementací a vyhodnocením Huffmanova kódování v několika režimech běhu -- statické Huffmanovo kódování,
+        adaptivní Huffmanovo kódování, statické Huffmanovo kódování s modelem a adaptivní Huffmanovo kódování s modelem.
+
+    \section{Hufmannovo kódování}
+        Jedná se o všeobecně používanou metodu komprese dat. Tato metoda je základem mnoha aplikací (např. mp3 nebo zip). Základem Hufmannova kódování je Huffmanův strom, který se používá jak ke kódování jednotlivých znaků, tak i k jejich dekódování. Kódovaná data jsou uložena v listech stromu, a jejich kód je reprezentován
+        posloupností levých a pravých hran, kde levá hrana reprezentuje bit hodnoty 0 a pravá bit hodnoty 1 (nebo obráceně).
+
+        \subsection{Statické Huffmanovo kódování}
+            K vytvoření statického Huffmanova stromu je zapotřebí znalost počtu výskytů jednotlivých kódovaných
+            znaků na vstupu. K sestavení stromu je potřeba seřazený seznam uzlů. Na počátku jsou v seznamu pouze
+            listy a seznam je seřazený podle počtu výskytů jednotlivých znaků. Dále se iterativně provádí algoritmus,
+            který ze seznamu vyjme první 2 prvky seznamu (prvky s nejmenším počtem výskytů), sečte jejich výskyty a
+            přiřadí je jako potomky novému uzlu, který je posléze vložen do seřazeného seznamu podle součtu výskytu jeho potomků. Algoritmus se opakuje, dokud velikost seznamu není rovna jedné, poté je v seznamu pouze kořen stromu.
+
+            K dekompresi dat je nutné tento strom načíst ze souboru a po bitech ze vstupu procházet strom. Jakmile
+            se při průchodu stromu narazí na list s daty, data se zapíší na výstup a strom se prochází znovu od kořene.
+
+        \subsection{Dynamické Huffmanovo kódování}
+            Dynamické Hufmannovo kódování aktualizuje strom během načítaní dat ze vstupu. Aktualizace stromu
+            může být prováděna po každém znaku nebo i jednou za X znaků. Na počátku může strom obsahovat
+            všechny znaky kódované abecedy (zvolené řešení v této implementaci) nebo pouze kořen. V případě,
+            že obsahuje kořen je nutné do stromu postupně zanášet nově načtené znaky, jinak se pouze aktualizují
+            počty výskytů a případně se přeskládá strom.
+
+            Algoritmus dekomprese je shodný se statickou metodou s tím rozdílem, že strom se na počátku neukládá
+            do souboru, ale postupně se aktualizuje.
+
+            \subsubsection{Aktualizace Huffmanova stromu}
+                Ve chvíli kdy načteme znak ze vstupu, najdeme nejpravější uzel
+                se stejným počtem výskytů jako uzel, který reprezentuje načtený znak. Pokud existuje
+                takový uzel a~zároveň není předkem tohoto uzlu a zároveň není hlouběji ve stromu, vyměníme
+                oba uzly včetně jejích následníků. Tento postup budeme aplikovat na rodiče aktuálně načteného
+                uzlu do té doby, než se dostaneme ke kořeni stromu.
 
     \section{Implementace}
         Projekt je implementován v jazyce C\texttt{++} a samotná implementace je rozdělena do 3 modulů -- huffman, Coder a Tree.
-        V modulu huffman je implementováno zpracování argumentů programu. V modulu Tree je implementace operací s huffmanovým stromem
-        a v modulu Coder je implementace huffmanova kódování a modelu.
+        V modulu huffman je implementováno zpracování argumentů programu. V modulu Tree je implementace operací s Huffmanovým stromem
+        a v modulu Coder je implementace Huffmanova kódování a modelu.
 
         Huffmanův strom je implementován jako třída, kde každý objekt této třídy nese ukazatel na svého rodiče, pravého a levého následníka,
         data, svou hloubku ve stromu a počet, který obsahuje buď sumu počtu svých potomků nebo, v případě listu, počet výskytů v souboru.
         Uzel od listu lze v tomto stromě rozlišit tak, že list nemá nastaven své potomky.
 
-        Huffmanovo kování je implementováno jako třída, která využívá huffmanova stromu ke kompreesi a dekompresi dat. Každý komprimovaný soubor obsahuje
-        na svém začátku jeden byte, kde je uložen režim komprese dat. První 3 bity definují vynaložené úsilý během komprese dat, 4. bit definuje
-        použití modelu, 5. bit definuje použití modelu a poslední 3 bity určují počet bitů, které jsou na konci souboru vloženy pro zarovnání velikosti
+        Huffmanovo kování je implementováno jako třída, která využívá Huffmanova stromu ke kompresi a dekompresi dat. Každý komprimovaný soubor obsahuje
+        na svém začátku jeden byte, kde je uložen režim komprese dat. První 3 bity definují vynaložené úsilí během komprese dat, 4. bit definuje
+        použitou metodu -- statické nebo adaptivní kódování, 5. bit definuje použití modelu a poslední 3 bity určují počet bitů, které jsou na konci souboru vloženy pro zarovnání velikosti
         na celé byty. Díky tomuto je dekomprese dat nezávislá na parametrech programu a uživatel nemusí aplikaci spouštět se stejnými parametry, aby
         dekomprese dat proběhla úspěšně. V případě statické komprese dat je za tímto bytem vloženo dalších 256 bytů, kde jsou uloženy jednotlivé délky
-        použitých kódů, které následují hned po těchto počtech. ZBytek souboru již obsahuje zakódované symboly pomocí huffmanova kódování.
+        použitých kódů, které následují hned po těchto počtech. Zbytek souboru již obsahuje zakódované symboly pomocí Huffmanova kódování.
 
-        Kvůli vysoké výpočetní náročnosti implementace adaptivního huffmanova kódování byla aplikace rozšířena o další parametr \texttt{-N}, kde $0 \leq N \leq 9$,
-        který definuje úsilý, který program věnuje kódování jednotlivých symbolů do výstupního souboru. Přestože lze toto úsilý definovat dohromady desíti
-        číslicemi, v projektu je použito jen 7 těchto hodnot -- hodnotám 0 -- 3 je věnováno stejné (nejnižší) úsilý.
+        Model je implementován jako rozdíl hodnot jednotlivých bytů na vstupu. Tato metoda byla zvolena pro skutečnost, že účelem programu je
+        komprese obrázku ve stupních šedi, kde se neočekávají prudké přechody mezi jednotlivými pixely, které jsou reprezentovány právě jedním
+        bytem.
+
+        Kvůli vysoké výpočetní náročnosti implementace adaptivního Huffmanova kódování byla aplikace rozšířena o další parametr \texttt{-N}, kde $0 \leq N \leq 9$,
+        který definuje úsilí, který program věnuje kódování jednotlivých symbolů do výstupního souboru. Přestože lze toto úsilí definovat dohromady desíti
+        číslicemi, v projektu je použito jen 7 těchto hodnot -- hodnotám 0 -- 3 je věnováno stejné (nejnižší) úsilí.
 
         \subsection{Efektivita výpočtu adaptivního kódování}
             Důvodem, proč implementace adaptivního kódování je výpočetně náročná, je pomalá aktualizace stromu a nutnost
             po každé jeho aktualizaci znovu vypočítat bitovou reprezentaci každého symbolu. Jednou z možných optimalizací,
-            které by tento problém vyřešily, je využití sourozenecké vlastnosti Huffmanova stromu a strom strom procházet
-            v poli a ne pomocí ukazatelů na levého nebo pravého následníka.
+            které by tento problém vyřešily, je využití sourozenecké vlastnosti Huffmanova stromu. Potom by bylo možné strom
+            uložit do pole, což by zrychlilo průchod stromem.
 
-            Původně jsem se domníval, že algoritmus je pomalý kvůli malému množství \texttt{cache hit} při přístupu k datům, tuto doměnku
-            mi vyvrátil nástroj valgrind, který naměřil $99,9\%$ \texttt{cache hit}. Důvodem proč si vše držím v paměti chache je skutečnost,
-            že výsledný strom je poměrně malý a navíc data pro něj alokuji v jednom jediném místě kódu a tak jsou jedny uzly stromu v paněti uloženy
+            Původně jsem se domníval, že algoritmus je pomalý kvůli malému množství \texttt{cache hit} při přístupu k datům. Tuto doměnku
+            mi vyvrátil nástroj valgrind, který naměřil $99,9\%$ \texttt{cache hit}. Důvodem, proč jsou data v paměti cache je skutečnost,
+            že výsledný strom je poměrně malý a navíc data pro něj jsou alokována v jednom místě kódu, a tak jsou jednotlivé uzly stromu v paměti uloženy
             vedle sebe.
 
-            Další nástroj, který jsem použil pro zjištění velké časové náročnosti mé implementace je gprof. Ten mě přesvědčil v mé doměnce,
-            že drtivá většina programu se vykonává ve funkci aktualizace stromu a aktualizaci bitové reprezentace jednotlivých znaků.
+            Další nástroj, který jsem použil pro zjištění velké časové náročnosti mé implementace, je gprof. Ten mě přesvědčil v mé doměnce,
+            že drtivá většina programu se vykonává ve funkci aktualizace stromu a aktualizace bitové reprezentace jednotlivých znaků.
 
     \section{Vyhodnocení}
+        Veškeré měření statistik bylo provedeno na serveru \texttt{merlin.fit.vutbr.cz}. Výsledky měření jsou zpracovány
+        ve třech tabulkách, kde jsou uvedeny naměřené hodnoty pro jednotlivé soubory a dvou grafech, kde jsou uvedené
+        průměrné hodnoty pro všechny soubory. U adaptivního kódování jsou v tabulkách uvedeny výsledky pro použité
+        úsilí 8, které je výchozí hodnotou programu (použije se, pokud parametr úsilí není zadán).
+
+        Jedním z nejdůležitějších měřítek komprese dat je počet potřebných bitů pro zakódování jednoho bytu dat.
+        V následující tabulce je zobrazena statistika pro jednotivé soubory.
+        \begin{table}[htbp]
+            \centering
+            \begin{tabular}{|c|l|l|l|l|}
+                \hline Soubor & Stat. & Stat. s modelem & Adap. & Adap. s modelem \\ \hline
+                hd01 & 3,889 & 3,146 & 3.906 & 3.443 \\
+                hd02 & 3.714 & 3.342 & 3.734 & 3.359 \\
+                hd07 & 5.622 & 3.873 & 5.731 & 3.919 \\
+                hd08 & 4.258 & 3.543 & 4.305 & 3.580 \\
+                hd09 & 6.669 & 4.698 & 6.748 & 4.732 \\
+                hd12 & 6.209 & 4.405 & 6.297 & 4.462 \\
+                nk01 & 6.519 & 6.080 & 6.592 & 6.111 \\ \hline
+            \end{tabular}
+            \caption{Počet bitů potřebných pro zakódování jednoho bytu dat.}
+        \end{table}
+
+        Další měřenou jednotkou byl spotřebovaný čas. V následujících dvou tabulkách jsou uvedeny naměřené hodnoty
+        pro kompresi a dekompresi dat. Hodnoty jsou uvedeny v sekundách.
+
+        \newpage
+        \begin{table}[htbp]
+            \centering
+            \begin{tabular}{|c|l|l|l|l|}
+                \hline Soubor & Stat. & Statat. s modelem & Adap. & Adap. s modelem \\ \hline
+                hd01 & 0.16 & 0.2 & 7.95 & 6.9 \\
+                hd02 & 0.18 & 0.21 & 7.31 & 6.94 \\
+                hd07 & 0.20 & 0.22 & 10.11 & 3.87 \\
+                hd08 & 0.18 & 0.19 & 8.51 & 5.65 \\
+                hd09 & 0.22 & 0.22 & 13.39 & 5.85 \\
+                hd12 & 0.22 & 0.24 & 12.77 & 5.51 \\
+                nk01 & 0.24 & 0.24 & 13.77 & 10.53 \\ \hline
+            \end{tabular}
+            \caption{Potřebný čas pro kompresi dat.}
+        \end{table}
+
+        \begin{table}[htbp]
+            \centering
+            \begin{tabular}{|c|l|l|l|l|}
+                \hline Soubor & Stat. & Stat. s modelem & Adap. & Adap. s modelem \\ \hline
+                hd01 & 0.04 & 0.04 & 0.83 & 0.78 \\
+                hd02 & 0.05 & 0.04 & 0.85 & 0.75 \\
+                hd07 & 0.04 & 0.05 & 10.05 & 0.7 \\
+                hd08 & 0.04 & 0.04 & 0.84 & 0.79 \\
+                hd09 & 0.04 & 0.05 & 1.28 & 0.97 \\
+                hd12 & 0.05 & 0.05 & 1.17 & 0.94 \\
+                nk01 & 0.04 & 0.04 & 1.32 & 1.19 \\ \hline
+            \end{tabular}
+            \caption{Potřebný čas pro dekompresi dat.}
+        \end{table}
+
+        Následující grafy srovnávají průměrné hodnoty pro vynaložené úsilí u adaptivního kódování
+        a výsledné hodnoty statického kódování.
+
+        \begin{figure}[htbp]
+            \begin{center}
+                \includegraphics[scale=0.75]{cas.png}
+                \caption{Průměrný čas komprese a dekomprese dat v závislosti na vynaloženém úsilí}
+            \end{center}
+        \end{figure}
+
+        \newpage
+
+        \begin{figure}[htbp]
+            \begin{center}
+                \includegraphics[scale=0.75]{bpc.png}
+                \caption{Průměrný počet bitů pro zakódování jednoho bytu dat v závislosti na vynaloženém úsilí}
+            \end{center}
+        \end{figure}
 
     \section{Závěr}
-        V rámci této práce byla implementována konzolová aplikace využívající huffmanova kódování. Aplikace umí komprimovat data pomocí
+        V rámci této práce byla implementována konzolová aplikace využívající Huffmanova kódování. Aplikace umí komprimovat data pomocí
         statického kódování s využitím histogramu a adaptivního kódování. Kompresi dat lze spustit i s modelem, díky kterému je ve většině
-        případech dosaženo lepšího kompresního poměru. Nicméně implementace adaptivního huffmanova kódování nebyla zvolena vhodně a z hlediska
-        časové náročnosti algoritmu je dosahuje velice slabých výsledků (z hlediska komprese dat dosahuje relativně dobrých výsledků).
+        případech dosaženo lepšího kompresního poměru. Nicméně implementace adaptivního Huffmanova kódování nebyla zvolena vhodně a z hlediska
+        časové náročnosti algoritmu dosahuje velice slabých výsledků. Z hlediska komprese dat dosahuje v průměru o 0,05 bpc lepších výsledků
+        než statické kódování, ale pouze při využití maximálního úsilí pro kompresi dat.
 
+    \section{Literatura}
+        [1] VAŠÍČEK Z., \textit{Studijní texty k přednášce Kóování a komprese dat -- statické metody}, VUT FIT v Brně [Online], [Cit. 4. 5. 2019], URL: \url{https://wis.fit.vutbr.cz/FIT/st/cfs.php?file=%2Fcourse%2FKKO-IT%2Flectures%2FKKO-04.pdf&cid=12830}
+
+        [2] TANEN B., \textit{Visualizing Adaptive Huffman Coding}, COMP--150, [Online], [Cit. 4. 5. 2019], URL: \url{http://ben-tanen.com/adaptive-huffman/?fbclid=IwAR1TMbe1v4zNv5TeNW8QdO04kfM6EzrB25HMc5tfKS2YXc9s_FQvKZ3YN0c}
 \end{document}
+
